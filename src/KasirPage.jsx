@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, Trash2, ShoppingCart, Search, Receipt, Printer, Download, X, Check, CreditCard, Smartphone, Banknote, BarChart3 } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, Search, Receipt, Printer, Download, X, Check, CreditCard, Smartphone, Banknote, BarChart3, LogOut } from 'lucide-react';
 import { supabase } from './lib/supabase';
+import { useAuth } from './AuthContext';
 
 const paymentMethods = [
   { id: 'cash', name: 'Tunai', icon: Banknote },
@@ -12,6 +13,7 @@ const paymentMethods = [
 
 export default function KasirPage() {
   const navigate = useNavigate();
+  const { user, logout, isOwner, branches, selectedBranch, changeBranch, getCurrentBranch } = useAuth();
   const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -157,7 +159,8 @@ export default function KasirPage() {
     try {
       const transaction = {
         order_number: generateOrderNumber(),
-        branch: 'Outlet 1',
+        branch: getCurrentBranch()?.name || 'Outlet 1',
+        branch_id: selectedBranch,
         items: cart,
         subtotal,
         tax,
@@ -271,14 +274,52 @@ Kembalian    : ${formatRupiah(currentTransaction.change)}` : ''}
       {/* Header */}
       <div className="bg-white shadow-sm p-4 sticky top-0 z-40">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Dimsum POS</h1>
-          <button
-            onClick={() => navigate('/laporan')}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium active:bg-blue-600"
-          >
-            <BarChart3 className="w-4 h-4" />
-            <span className="hidden md:inline">Laporan</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">Dimsum POS</h1>
+            {isOwner && branches.length > 1 && (
+              <select
+                value={selectedBranch}
+                onChange={(e) => changeBranch(e.target.value)}
+                className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                {branches.map(branch => (
+                  <option key={branch.id} value={branch.id}>{branch.name}</option>
+                ))}
+              </select>
+            )}
+            {!isOwner && user && (
+              <span className="text-sm text-gray-600 px-3 py-1 bg-gray-100 rounded-lg">
+                {getCurrentBranch()?.name}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {isOwner && (
+              <>
+                <button
+                  onClick={() => navigate('/management')}
+                  className="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium active:bg-purple-600"
+                >
+                  <span className="hidden md:inline">Menu</span>
+                  <span className="md:hidden">📋</span>
+                </button>
+                <button
+                  onClick={() => navigate('/laporan')}
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium active:bg-blue-600"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="hidden md:inline">Laporan</span>
+                </button>
+              </>
+            )}
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium active:bg-red-600"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden md:inline">Logout</span>
+            </button>
+          </div>
         </div>
         
         <div className="relative">

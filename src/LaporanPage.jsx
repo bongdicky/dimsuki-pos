@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, ShoppingBag, DollarSign, Download, Calendar, Search } from 'lucide-react';
+import { ArrowLeft, TrendingUp, ShoppingBag, DollarSign, Download, Calendar, Search, LogOut } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from './lib/supabase';
+import { useAuth } from './AuthContext';
 
 export default function LaporanPage() {
   const navigate = useNavigate();
+  const { logout, branches, selectedBranch, changeBranch } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterPeriod, setFilterPeriod] = useState('today'); // today, week, month, all
@@ -24,6 +26,11 @@ export default function LaporanPage() {
         .from('transactions')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Filter by selected branch
+      if (selectedBranch) {
+        query = query.eq('branch_id', selectedBranch);
+      }
 
       // Apply date filters
       const now = new Date();
@@ -164,7 +171,7 @@ export default function LaporanPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+                  <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <button
@@ -178,13 +185,33 @@ export default function LaporanPage() {
                 <p className="text-sm text-gray-600">Dashboard & Analytics</p>
               </div>
             </div>
-            <button
-              onClick={exportToCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
-            >
-              <Download className="w-5 h-5" />
-              <span className="hidden md:inline">Export CSV</span>
-            </button>
+            <div className="flex gap-2">
+              {branches.length > 1 && (
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => changeBranch(e.target.value)}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {branches.map(branch => (
+                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                  ))}
+                </select>
+              )}
+              <button
+                onClick={exportToCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
+              >
+                <Download className="w-5 h-5" />
+                <span className="hidden md:inline">Export CSV</span>
+              </button>
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="hidden md:inline">Logout</span>
+              </button>
+            </div>
           </div>
 
           {/* Filter Period */}
